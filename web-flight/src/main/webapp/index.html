@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/jedate.css">
+    <script src="static/js/jquery-3.3.1.min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+    <script src="static/js/jedate.js"></script>
+
+</head>
+<body style="background-color: #888888">
+
+
+<div class="container">
+    <form class="form-inline" role="form">
+        <div class="form-group">
+            <label class="control-label" for="name">航班名称</label>
+            <input type="text" class="form-control" id="name" name="name" placeholder="请输入名称">
+        </div>
+        <div class="form-group">
+            <label class="control-label" for="startTime">起飞时间</label>
+            <input type="text" class="form-control" id="startTime" placeholder="请输入名称">
+        </div>
+       <!-- <div class="form-group">
+            <label class="control-label">机票类型</label>
+            <label class="radio-inline">
+                <input type="radio" name="air" value="1" checked> 经济舱
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="air"  value="2"> 头等舱
+            </label>
+        </div>-->
+        <div class="form-group">
+            <label class="control-label" for="name">是否有票</label>
+            <label class="radio-inline">
+                <input type="radio" name="hasTicket"  value="1" checked> 有
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="hasticket"  value="2"> 无
+            </label>
+        </div>
+        <div class="form-group">
+            <label class="control-label" for="name">机型大小</label>
+            <label class="checkbox-inline">
+                <input type="checkbox" name="type" value="1" checked> 大
+            </label>
+            <label class="checkbox-inline">
+                <input type="checkbox" name="type"   value="2"> 中
+            </label>
+            <label class="checkbox-inline">
+                <input type="checkbox" name="type"value="3"> 小
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="name">机型</label>
+            <select class="form-control" id="typeId">
+                <option value="0">--请选择--</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="control-label" for="name">出发城市</label>
+            <input type="text" class="form-control" id="startArea" placeholder="请输入名称">
+        </div>
+        <div class="form-group">
+            <label class="control-label" for="name">到达城市</label>
+            <input type="text" class="form-control" id="endArea" placeholder="请输入名称">
+        </div>
+        <button type="button" class="btn btn-default" onclick="initPlaneList()">提交</button>
+        <button type="reset" class="btn btn-default" onclick="initPlaneList()">重置</button>
+    </form>
+    <button type="button" class="btn btn-default" onclick="exportExcel()">导出Excel</button>
+    <button type="button" class="btn btn-default" onclick="toAdd()">添加</button>
+
+    <table class="table table-condensed">
+        <caption>航天售票列表</caption>
+        <thead>
+        <tr>
+            <th><input type="checkbox" name=""></th>
+            <th>航班名称</th>
+            <th>起飞时间</th>
+            <th>到达时间</th>
+            <th>票数</th>
+            <th>票价</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="data">
+
+        </tbody>
+    </table>
+    <div id="pageData"></div>
+</div>
+
+</body>
+<script>
+
+    var enLang = {
+        name  : "en",
+        month : ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"],
+        weeks : [ "SUN","MON","TUR","WED","THU","FRI","SAT" ],
+        times : ["Hour","Minute","Second"],
+        timetxt: ["Time","Start Time","End Time"],
+        backtxt:"Back",
+        clear : "Clear",
+        today : "Now",
+        yes   : "Confirm",
+        close : "Close"
+    }
+    jeDate("#startTime",{
+        festival:true,
+        minDate:"1900-01-01",              //最小日期
+        maxDate:"2099-12-31",              //最大日期
+        method:{
+            choose:function (params) {
+
+            }
+        },
+        format: "YYYY-MM-DD hh:mm:ss"
+    });
+$(function () {
+    initPlaneList(1);
+    initPlaneType();
+})
+
+function toAdd() {
+    location.href="/manage.html";
+}
+
+function exportExcel() {
+    var name=$("#name").val();
+    var startTime = $("#startTime").val();
+    var air=$("[name=air]:checked").val();
+    var hasTicket=$("[name=hasTicket]:checked").val();
+    var type=$("[name=type]:checked").val();
+    var typeId=$("#typeId").find("option:selected").val();
+    var startArea=$("#startArea").val();
+    var endArea=$("#endArea").val();
+    location.href="http://localhost:8090/plane/exportExcel.api?name="+name+"&startTime="+startTime+"&air="+air+"&hasTicket="+hasTicket+"&type="+type+"&typeId="+typeId+"&startArea="+startArea+"&endArea="+endArea;
+}
+function initPlaneType() {
+    $.ajax({
+        url:"http://localhost:8090/plane/showPlaneType.api",
+        dataType:"json",
+        type:"get",
+        success:function (re) {
+            if (re.code==200){
+                var data= re.data;
+                var str='<option value="0">--请选择--</option>';
+                for (var i = 0; i < data.length; i++) {
+                    str+='<option value="'+data[i].id+'">'+data[i].name+'</option>'
+                }
+                $("#typeId").html(str);
+            }else{
+                alert(re.message);
+            }
+        },error:function () {
+            alert("请求失败");
+        }
+    })
+}
+    function initPlaneList(page) {
+    var name=$("#name").val();
+    var startTime = $("#startTime").val();
+    var air=$("[name=air]:checked").val();
+    var hasTicket=$("[name=hasTicket]:checked").val();
+    var type=$("[name=type]:checked").val();
+    var typeId=$("#typeId").find("option:selected").val();
+    var startArea=$("#startArea").val();
+    var endArea=$("#endArea").val();
+        var size = $("#size").val();
+        if (size==null){
+            size = 3;
+        }
+        if (page==undefined){
+            page = $("#page").val()
+        }
+        var data ={};
+        data.pageSize=size;
+        data.pageIndex=page;
+        data.name=name;
+        data.startTime=startTime;
+        data.air=air;
+        data.hasTicket=hasTicket;
+        data.type=type;
+        data.typeId=typeId;
+        data.startArea=startArea;
+        data.endArea=endArea;
+        $.ajax({
+            url:"http://localhost:8090/plane/initPlaneList.api",
+            dataType:"json",
+            type:"post",
+            data:data,
+            success:function (re) {
+                if (re.code==200){
+                    var str = "";
+                    var data=re.data;
+                    var list=data.list;
+                    var s="";
+                    var planeType='';
+                    for (var i = 0; i < list.length; i++) {
+                        if (list[i].typeid==1){
+                            s="大型";
+                        }else if (list[i].typeid==2){
+                            s="中型"
+                        } else{
+                            s="小型"
+                        }
+                        if (list[i].planeType==1){
+                            planeType = "经济舱";
+                        }else{
+                            planeType = "头等舱";
+                        }
+                        var start=new Date(list[i].start_time);
+                        var end=new Date(list[i].end_time);
+                        var date=(end-start)/(1000 * 60 * 60 * 24);
+                        var now=new Date();
+                        var cut=now -start;
+                        var d=getInervalHour(start,now);
+
+                        str+='<tr>';
+                        str+='<td><input type="checkbox"></td>'
+                        str+='<td>'+list[i].name+'('+planeType+')'+'<br/>'+list[i].typeName+'('+s+')</td>'
+                        if (d <=2 &&date<1){
+                            str+='<td>'+formatDate(list[i].start_time)+'<br/>临近起飞<br/>'+list[i].startAreaName+','+list[i].startAirName+','+list[i].startFoolerName+'</td>'
+                        }else{
+                            str+='<td>'+formatDate(list[i].start_time)+'<br/>'+list[i].startAreaName+','+list[i].startAirName+','+list[i].startFoolerName+'</td>'
+                        }
+                        str+='<td>'+formatDate(list[i].end_time)+'+'+parseInt(date)+'<br/>'+list[i].endAreaName+','+list[i].endAirName+','+list[i].endFoolerName+'</td>'
+                        str+='<td>'+list[i].total_count+'</td>'
+                        str+='<td>'+list[i].price+'</td>'
+                        if (list[i].total_count<1){
+                            str+='<td><input type="button" disabled="disabled" value="购票" onclick="updateThisTicketCount('+list[i].ticket_id+')"></td>'
+                        } else{
+                            str+='<td><input type="button" value="购票" onclick="updateThisTicketCount('+list[i].ticket_id+')"></td>'
+                        }
+                        str+='<td><input type="button" value="取消航班" onclick="updateThisStatus('+list[i].id+')"></td>'
+                        str+='<td><input type="button" value="修改" onclick="updateThis('+list[i].ticket_id+')"></td>'
+                        str+= '</tr>'
+                    }
+                    var s=' 当前第<input type="text" onmouseout="initPlaneList()" id="page" value="'+data.pageIndex+'" style="width: 20px"/>页\n';
+                    if (data.pageIndex==1){
+                        s+='        首页\n' +
+                            '        上一页\n' ;
+                    }
+
+                    if (data.pageIndex>1){
+                        s+= '        <a href="javascript:;" onclick="initPlaneList(1)">首页</a>\n' +
+                            '        <a href="javascript:;" onclick="initPlaneList('+(data.pageIndex-1)+')">上一页</a>\n';
+                    }
+
+
+                    if (data.pageIndex==data.pageTotal){
+                        s+='        下一页\n' +
+                            '        尾页\n';
+                    }
+
+
+                    if (data.pageIndex < data.pageTotal){
+                        s+= '        <a href="javascript:;" onclick="initPlaneList('+parseInt(data.pageIndex+1)+')">下一页</a>\n' +
+                            '        <a href="javascript:;" onclick="initPlaneList('+data.pageTotal+')">尾页</a>\n';
+                    }
+
+
+                    s+='    共'+data.pageTotal+'页'+data.total+'条\n' +
+                        '    每页\n' +
+                        '    <select id="size" onchange="initPlaneList('+data.pageTotal+')">\n';
+                    if(data.pageSize==3){
+                        s+=  '        <option value="3" selected>3</option>\n';
+                    }else{
+                        s+=  '        <option value="3">3</option>\n';
+                    }
+                    if(data.pageSize==5){
+                        s+=  '        <option value="5" selected>5</option>\n';
+                    }else{
+                        s+=  '        <option value="5">5</option>\n';
+                    }
+                    if(data.pageSize==10){
+                        s+=  '        <option value="10" selected>10</option>\n';
+                    }else{
+                        s+=  '        <option value="10">10</option>\n';
+                    }
+                    s+='    </select>\n' +
+                        '    条';
+                    $("#pageData").html(s);
+                    $("#data").html(str);
+                }else{
+                    alert(re.message);
+                }
+            },error:function () {
+                alert("请求失败");
+            }
+        })
+    }
+
+function updateThis(id) {
+    sessionStorage.setItem("id",id);
+    location.href="manage.html";
+}
+
+function formatTen(num) {
+    return num > 9 ? (num + "") : ("0" + num);
+}
+function formatDate(date) {
+    var date = new Date(date)
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    var hour = date.getHours();
+    var minute = date.getMinutes();
+    var second = date.getSeconds();
+    return formatTen(hour)+ ":" +formatTen(minute)+ ":" +formatTen(second);
+}
+
+function getInervalHour(startDate, endDate) {
+    if (startDate.getFullYear()==endDate.getFullYear()&&startDate.getMonth()==endDate.getMonth()&&startDate.getDate()==endDate.getDate()){
+        var ms = endDate.getTime() - startDate.getTime();
+        if (ms < 0) return 0;
+        return Math.floor(ms/1000/60/60);
+    }
+}
+
+function DateDiff(sDate1, sDate2) {
+    var aDate, oDate1, oDate2, iDays
+    aDate = sDate1.split(":")
+    oDate1 = new Date(aDate[1] + '-' + aDate[2] + '-' + aDate[0])
+    aDate = sDate2.split(":")
+    oDate2 = new Date(aDate[1] + '-' + aDate[2] + '-' + aDate[0])
+    iHour = parseInt(Math.abs(oDate1 - oDate2) / 1000 / 60 / 60)
+    return iHour
+}
+function updateThisStatus(id) {
+    $.ajax({
+        url:"http://localhost:8090/plane/updateThisStatus.api",
+        data:{"id":id},
+        dataType:"json",
+        type:"post",
+        success:function (re) {
+            if (re.code==200){
+                initPlaneList($("#page").val());
+            }else{
+                alert(re.message);
+            }
+        },error:function () {
+            alert("请求失败");
+        }
+    })
+}
+
+function updateThisTicketCount(id) {
+    $.ajax({
+        url:"http://localhost:8090/ticket/updateThisTicketCount.api",
+        data:{"id":id},
+        dataType:"json",
+        type:"post",
+        success:function (re) {
+            if (re.code==200){
+                initPlaneList($("#page").val());
+            }else{
+                alert(re.message);
+            }
+        },error:function () {
+            alert("请求失败");
+        }
+    })
+}
+</script>
+</html>

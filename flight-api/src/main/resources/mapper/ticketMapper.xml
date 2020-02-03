@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.fh.dao.TicketDao">
+<update id="updateThisTicketCount" parameterType="java.lang.Integer">
+    update t_flight_ticket t set t.total_count = t.total_count-1 where id =#{id} and t.total_count-1 >= 0
+</update>
+</mapper>

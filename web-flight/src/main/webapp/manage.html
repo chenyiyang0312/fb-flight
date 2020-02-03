@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/static/css/jedate.css">
+    <script src="/static/js/jquery-3.3.1.min.js"></script>
+    <script src="/static/js/jedate.js"></script>
+</head>
+<body>
+<form>
+    <input type="hidden" id="ticketId_1">
+    <input type="hidden" id="ticketId_2">
+    <input type="hidden" id="id">
+    航班名称：<input type="text" id="name" name="name" /><br/>
+   <br/>
+    <div class="jeitem">
+        <label class="jelabel"> 起飞时间：</label>
+        <div class="jeinpbox"><input type="text" class="jeinput" id="start_time" placeholder="YYYY-MM-DD hh:mm:ss" name="start_time"></div>
+    </div>
+    <div class="jeitem">
+        <label class="jelabel">到达时间：</label>
+        <div class="jeinpbox"><input type="text" id="end_time" class="jeinput" placeholder="YYYY-MM-DD hh:mm:ss" name="end_time"></div>
+    </div>
+    <br/>
+    机型：<select id="type" name="type_id">
+            <option value="0">--请选择--</option>
+        </select><br/>
+    出发机场：<select id="area" name="start_1_id" onchange="initplaneAir(this)">
+    <option value="0">--请选择--</option>
+            </select>
+    <select name="start_2_id" id="start_2_id" onchange="initplanefloor(this)">
+        <option value="0">--请选择--</option>
+    </select>
+    <select name="start_3_id" id="start_3_id">
+        <option value="0">--请选择--</option>
+    </select>
+    <br/>
+    到达机场：<select id="endArea" name="end_1_id" onchange="initEndplaneAir(this)">
+    <option value="0">--请选择--</option>
+</select>
+    <select name="end_2_id" id="end_2_id" onchange="initplanefloor(this)">
+        <option value="0">--请选择--</option>
+    </select>
+    <select name="end_3_id" id="end_3_id">
+        <option value="0">--请选择--</option>
+    </select>
+    <br/>
+    机票：<div id="plane1"><select id="ticket1">
+    <option value="1">经济舱</option>
+</select>
+    <input type="text" id="total_count1">
+    <input type="text" id="price1">
+    <input type="button" value="+"><br/></div>
+    <div id="plane2">
+        <select id="tickect2">
+            <option value="2">头等舱</option>
+        </select>
+        <input type="text" id="total_count2">
+        <input type="text" id="price2">
+        <input type="button" value="+"><br/>
+    </div>
+
+    <input type="button" value="提交" onclick="saveManage()"><input type="reset">
+</form>
+</body>
+<script>
+    var enLang = {
+        name  : "en",
+        month : ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"],
+        weeks : [ "SUN","MON","TUR","WED","THU","FRI","SAT" ],
+        times : ["Hour","Minute","Second"],
+        timetxt: ["Time","Start Time","End Time"],
+        backtxt:"Back",
+        clear : "Clear",
+        today : "Now",
+        yes   : "Confirm",
+        close : "Close"
+    }
+    jeDate("#start_time",{
+        festival:true,
+        minDate:"1900-01-01",              //最小日期
+        maxDate:"2099-12-31",              //最大日期
+        method:{
+            choose:function (params) {
+
+            }
+        },
+        format: "YYYY-MM-DD hh:mm:ss"
+    });
+    jeDate("#end_time",{
+        festival:true,
+        minDate:"1900-01-01",              //最小日期
+        maxDate:"2099-12-31",              //最大日期
+        method:{
+            choose:function (params) {
+
+            }
+        },
+        format: "YYYY-MM-DD hh:mm:ss"
+    });
+    $(function () {
+        initArea();
+    initPlaneType();
+        var id=sessionStorage.getItem("id");
+        if (id!=null){
+            $.ajax({
+                url:"http://localhost:8090/plane/getOnePlaneInfo.api",
+                dataType:"json",
+                data:{"id":id},
+                async:false,
+                type:"post",
+                success:function (re) {
+                    if (re.code==200){
+                        $("#name").val(re.data.name);
+                        $("#start_time").val(changeDate(re.data.start_time));
+                        $("#end_time").val(changeDate(re.data.end_time));
+                        $("[name=type_id]").find("option[value="+re.data.typeid+"]").attr("selected","selected");
+                        $("[name=start_1_id]").find("option[value="+re.data.start_1_id+"]").attr("selected","selected");
+                        initplaneAir($("[name=start_1_id]"));
+                        $("[name=start_2_id]").find("option[value="+re.data.start_2_id+"]").attr("selected","selected");
+                        initplanefloor($("[name=start_2_id]"));
+                        $("[name=start_3_id]").find("option[value="+re.data.start_3_id+"]").attr("selected","selected");
+
+                        $("[name=end_1_id]").find("option[value="+re.data.end_1_id+"]").attr("selected","selected");
+                        initEndplaneAir($("[name=end_1_id]"));
+                        $("[name=end_2_id]").find("option[value="+re.data.end_2_id+"]").attr("selected","selected");
+                        initplanefloor($("[name=end_2_id]"));
+                        $("[name=end_3_id]").find("option[value="+re.data.end_3_id+"]").attr("selected","selected");
+                        if (re.data.planeType==1){
+                            $("#plane2").css("display","none");
+                            $("#total_count1").val(re.data.total_count);
+                            $("#price1").val(re.data.price);
+                            $("#ticketId_1").val(re.data.ticket_id);
+                        }else{
+                            $("#plane1").css("display","none");
+                            $("#total_count2").val(re.data.total_count);
+                            $("#price2").val(re.data.price);
+                            $("#ticketId_2").val(re.data.ticket_id);
+                        }
+                        $("#id").val(re.data.id);
+
+                    }else{
+                        alert(re.message);
+                    }
+
+                },error:function () {
+                    alert("请求失败");
+                }
+            })
+        }
+
+    })
+
+
+    function changeDate(date) {
+        var data=new Date(date);
+       var y= data.getFullYear();
+       var m= parseInt(data.getMonth()+1);
+       var d= data.getDate();
+       var h=data.getHours();
+       var mm=data.getMinutes();
+       var dd=data.getSeconds();
+       return y+"-"+m+"-"+d+" "+h+":"+mm+":"+dd;
+    }
+function saveManage() {
+    var data = {};
+    var name=$("#name").val();
+    var id=$("#id").val();
+    data.name=name;
+    data.id=id;
+    var start_time=$("#start_time").val();
+    data.start_time=start_time;
+    var end_time=$("#end_time").val();
+    data.end_time=end_time;
+    var type_id=$("#type").find("option:selected").val();
+    data.type_id=type_id;
+    var start_1_id=$("#area").find("option:selected").val();
+    data.start_1_id=start_1_id;
+    var start_2_id=$("#start_2_id").find("option:selected").val();
+    data.start_2_id=start_2_id;
+    var start_3_id=$("#start_3_id").find("option:selected").val();
+    data.start_3_id=start_3_id;
+    var end_1_id=$("#endArea").find("option:selected").val();
+    data.end_1_id=end_1_id;
+    var end_2_id=$("#end_2_id").find("option:selected").val();
+    data.end_2_id=end_2_id;
+    var end_3_id=$("#end_3_id").find("option:selected").val();
+    data.end_3_id=end_3_id;
+    var type1=$("#ticket1").find("option:selected").val();
+    data.type1=type1;
+    var type2=$("#tickect2").find("option:selected").val();
+    data.type2=type2;
+    var total_count1=$("#total_count1").val();
+    data.total_count1=total_count1;
+    var price1=$("#price1").val();
+    data.price1=price1;
+    var total_count2=$("#total_count2").val();
+    data.total_count2=total_count2;
+    var price2=$("#price2").val();
+    var ticketId_1=$("#ticketId_1").val();
+    var ticketId_2=$("#ticketId_2").val();
+    data.price2=price2;
+    data.ticketId_1=ticketId_1;
+    data.ticketId_2=ticketId_2;
+    $.ajax({
+        url:"http://localhost:8090/flight/saveManage.api",
+        dataType:"json",
+        type:"post",
+        data:data,
+        success:function (re) {
+            if (re.code==200){
+                alert(re.message);
+            }else{
+                alert(re.message);
+            }
+        },error:function () {
+            alert("请求失败");
+        }
+    })
+
+}
+    function initEndplaneAir(obj) {
+        var id=$(obj).find("option:selected").val();
+        $.ajax({
+            url:"http://localhost:8090/area/initplaneAir.api",
+            dataType:"json",
+            type:"post",
+            async:false,
+            data:{"areaId":id},
+            success:function (re) {
+                if (re.code==200){
+                    var data= re.data;
+                    var str='<option value="0">--请选择--</option>';
+                    for (var i = 0; i < data.length; i++) {
+                        str+='<option value="'+data[i].id+'">'+data[i].name+'</option>'
+                    }
+                    $(obj).next().html(str);
+
+                }else{
+                    alert(re.message);
+                }
+            },error:function () {
+                alert("请求失败");
+            }
+        })
+    }
+
+    function initplanefloor(obj) {
+        var id=$(obj).find("option:selected").val();
+        $.ajax({
+            url:"http://localhost:8090/area/initplanefloor.api",
+            dataType:"json",
+            type:"post",
+            data:{"areaId":id},
+            async:false,
+            success:function (re) {
+                if (re.code==200){
+                    var data= re.data;
+                    var str='<option value="0">--请选择--</option>';
+                    for (var i = 0; i < data.length; i++) {
+                        str+='<option value="'+data[i].id+'">'+data[i].name+'</option>'
+                    }
+                    $(obj).next().html(str);
+                }else{
+                    alert(re.message);
+                }
+            },error:function () {
+                alert("请求失败");
+            }
+        })
+    }
+
+    function initplaneAir(obj) {
+        var id=$(obj).find("option:selected").val();
+        $.ajax({
+            url:"http://localhost:8090/area/initplaneAir.api",
+            dataType:"json",
+            type:"post",
+            async:false,
+            data:{"areaId":id},
+            success:function (re) {
+                if (re.code==200){
+                    var data= re.data;
+                    var str='<option value="0">--请选择--</option>';
+                    for (var i = 0; i < data.length; i++) {
+                        str+='<option value="'+data[i].id+'">'+data[i].name+'</option>'
+                    }
+                    $(obj).next().html(str);
+                    if (id!=null){
+                        initArea(id);
+                    }
+
+                }else{
+                    alert(re.message);
+                }
+            },error:function () {
+                alert("请求失败");
+            }
+        })
+    }
+
+    function initArea(id) {
+        $.ajax({
+            url:"http://localhost:8090/area/initArea.api",
+            dataType:"json",
+            type:"post",
+            async:false,
+            data:{"areaId":id},
+            success:function (re) {
+                if (re.code==200){
+                    var data= re.data;
+                    var str='<option value="0">--请选择--</option>';
+                    for (var i = 0; i < data.length; i++) {
+                        str+='<option value="'+data[i].id+'">'+data[i].name+'</option>'
+                    }
+                    if (id!=null ){
+                        $("#endArea").html(str);
+                    }else{
+                        $("#area").html(str);
+                    }
+                }else{
+                    alert(re.message);
+                }
+            },error:function () {
+                alert("请求失败");
+            }
+        })
+    }
+
+    function initPlaneType() {
+        $.ajax({
+            url:"http://localhost:8090/plane/showPlaneType.api",
+            dataType:"json",
+            type:"get",
+            async:false,
+            success:function (re) {
+                if (re.code==200){
+                    var data= re.data;
+                    var str='<option value="0">--请选择--</option>';
+                    for (var i = 0; i < data.length; i++) {
+                        str+='<option value="'+data[i].id+'">'+data[i].name+'</option>'
+                    }
+                    $("#type").html(str);
+
+                }else{
+                    alert(re.message);
+                }
+            },error:function () {
+                alert("请求失败");
+            }
+        })
+    }
+</script>
+</html>

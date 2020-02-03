@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.fh.dao.FlightDao">
+
+    <select id="getOnePlaneInfo" parameterType="java.lang.Integer" resultType="java.util.Map">
+        select tf.id,tf.name,tf.start_time,tf.end_time,tp.name typeName,tp.type typeid,tft.total_count,tft.price,tft.type planeType,tft.id ticket_id,
+ta1.id start_1_id,ta2.id start_2_id,ta3.id start_3_id,at1.id end_1_id,at2.id end_2_id,at3.id end_3_id
+ from t_flight tf
+left join t_flight_ticket tft on tf.id= tft.flight_id
+left join t_plane_type tp on tp.id  = tf.type_id
+left join t_area ta1 on tf.start_1_id = ta1.id
+left join t_area ta2 on tf.start_2_id = ta2.id
+left join t_area ta3 on tf.start_3_id = ta3.id
+left join t_area at1 on  at1.id = tf.end_1_id
+left join t_area at2 on  at2.id = tf.end_2_id
+left join t_area at3 on  at3.id = tf.end_3_id
+where tft.id = #{id}
+    </select>
+
+    <select id="initPlaneList" parameterType="com.fh.model.PageData" resultType="java.util.Map">
+        select tf.id,tf.name,tf.start_time,tf.end_time,tp.name typeName,tp.type typeid,tft.total_count,tft.price,tft.type planeType,tft.id ticket_id,
+ta1.name startAreaName,ta2.name startAirName,ta3.name startFoolerName,at1.name endAreaName,at2.name endAirName,at3.name endFoolerName
+ from t_flight tf
+left join t_flight_ticket tft on tf.id= tft.flight_id
+left join t_plane_type tp on tp.id  = tf.type_id
+left join t_area ta1 on tf.start_1_id = ta1.id
+left join t_area ta2 on tf.start_2_id = ta2.id
+left join t_area ta3 on tf.start_3_id = ta3.id
+left join t_area at1 on  at1.id = tf.end_1_id
+left join t_area at2 on  at2.id = tf.end_2_id
+left join t_area at3 on  at3.id = tf.end_3_id
+<include refid="search"></include>
+limit ${startIndex},#{pageSize}
+    </select>
+
+    <sql id="search">
+        <where>
+            <if test="name !=null and name!=''">
+                tf.name like concat(concat('%',#{name}),'%')
+            </if>
+            <if test="startTime !=null">
+                and tf.start_time &lt; #{startTime}
+            </if>
+            <if test="air !=null">
+                and tft.type =#{air}
+            </if>
+            <if test="type !=null and type!=0">
+                and tp.type =#{type}
+            </if>
+            <if test="typeId !=null and typeId!=0">
+                and tp.id =#{typeId}
+            </if>
+            <if test="startArea !=null and startArea!=''">
+                and ta1.name like concat(concat('%',#{startArea}),'%')
+            </if>
+            <if test="endArea !=null and endArea !=''">
+                and at1.name like concat(concat('%',#{endArea}),'%')
+            </if>
+
+        </where>
+    </sql>
+
+    <select id="selectPlaneCount" parameterType="com.fh.model.PageData" resultType="java.lang.Long">
+   select count(tf.id)
+ from t_flight tf
+left join t_flight_ticket tft on tf.id= tft.flight_id
+left join t_plane_type tp on tp.id  = tf.type_id
+left join t_area ta1 on tf.start_1_id = ta1.id
+left join t_area ta2 on tf.start_2_id = ta2.id
+left join t_area ta3 on tf.start_3_id = ta3.id
+left join t_area at1 on  at1.id = tf.end_1_id
+left join t_area at2 on  at2.id = tf.end_1_id
+left join t_area at3 on  at3.id = tf.end_1_id
+        <include refid="search"></include>
+    </select>
+
+    <select id="getAllPlane" parameterType="com.fh.model.PageData" resultType="com.fh.model.ForExcel">
+        select tf.id,tf.name,tf.start_time,tf.end_time,tp.name typeName,tp.type typeid,tft.total_count,tft.price,tft.type planeType,tft.id ticket_id,
+concat(ta1.name,',',ta2.name,',',ta3.name) startArea, concat(at1.name,',',at2.name,',',at3.name) endArea
+ from t_flight tf
+left join t_flight_ticket tft on tf.id= tft.flight_id
+left join t_plane_type tp on tp.id  = tf.type_id
+left join t_area ta1 on tf.start_1_id = ta1.id
+left join t_area ta2 on tf.start_2_id = ta2.id
+left join t_area ta3 on tf.start_3_id = ta3.id
+left join t_area at1 on  at1.id = tf.end_1_id
+left join t_area at2 on  at2.id = tf.end_2_id
+left join t_area at3 on  at3.id = tf.end_3_id
+        <include refid="search"></include>
+    </select>
+</mapper>
